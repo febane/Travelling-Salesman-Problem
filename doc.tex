@@ -1,0 +1,127 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[portuguese]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{makeidx}
+\usepackage{url}
+ \title{Documentação - Caixeiro Viajante}
+ \author{Fernando Barbosa Neto \and Jeferson de Oliveira Batista}
+ \date{30 de Agosto de 2015}
+\begin{document}
+ \maketitle
+ \newpage
+ 
+ \section{Introdução}
+  {\paragraph{} Este trabalho tratará da implementação de diferentes soluções para o clássico problema do Caixeiro Viajante. }
+  {\paragraph{} Uma definição básica do problema do caixeiro viajante é a seguinte: um caixeiro viajante deve visitar determinada quantidade de cidades de modo que, partindo de uma cidade inicial, percorra todas as demais apenas uma vez e, por fim, retorne à cidade inicial. O caminho percorrido pelo caixeiro será denominada de tour neste trabalho. }
+  {\paragraph{} O Problema do Caixeiro Viajante, do inglês {\it Traveling Salesman Problem} ou também conhecido como TSP, será abordado nas suas modalidades ATSP ({\it Assymetric Traveling Salesman Problem}), cujas distâncias entre as cidades são assimétricas, e TSP simétrico, neste caso sendo utilizado a própria distância euclidiana como distância entre as cidades. }
+  {\paragraph{} Para a resolução de tal problema, foram utilizadas métodos distintos, quatro ao todo. Os métodos utilizados foram: Solução Ótima para o ATSP, Heurísitica Vizinho mais Próximo para o ATSP, Heurística de Melhoramento 2-opt para o ATSP e Heurística Envoltório Convexo para o TSP simétrico. Essas implementações serão detalhadas ao longo do trabalho }
+ \newpage
+ 
+ \section{Casos de Teste}  
+  {\paragraph{} Para efeito de teste e comparação entre as implementações a serem apresentados neste trabalho, serão utilizados cinco casos de teste. }
+  {\paragraph{} O primeiro caso de teste, armazenado no arquivo test\_1, que será utilizado nas heurísticas referentes ao ATSP, será utilizada a seguinte matriz $3 \times 3$ como entrada, a qual está também presente na especificação do trabalho:\\ }
+  \[ \left( \begin{array}{ccc}
+999999 & 331 & 450 \\
+162 & 999999 & 970 \\
+856 & 424 & 999999 \end{array} \right)\]
+  {\paragraph{} Esse primeiro caso teste tem como objetivo principal comparar as respostas finais em cada heurísitca. Como o caso de teste é uma matriz de baixa ordem, é possível verificar a olho se os algoritmos estão retornando os resultados esperados.}
+  {\paragraph{} O segundo caso de teste, armazenado no arquivo test\_2, que também será usado nas heurísticas referentes ao ATSP, será testada a matriz de ordem 12 que pode ser obtida com as primeiras 12 linhas das primeiras 12 colunas do exemplo localizado em \url{http://www.iwr.uni-heidelberg.de/groups/comopt/software/TSPLIB95/atsp/br17.atsp.gz} Este exemplo foca na comparação do tempo de resolução do processo Exato com as heurísticas Vizinho mais Próximo e 2-opt. }
+  {\paragraph{} O terceiro caso de teste, armazenado no arquivo test\_3, que será experimentado nas heurísticas Vizinho mais Próximo e Melhoramento 2-opt para o ATSP somente, é uma matriz de ordem 443, a qual poderá ser encontrada no website \url{http://www.iwr.uni-heidelberg.de/groups/comopt/software/TSPLIB95/atsp/rbg443.atsp.gz} Esta matriz não será utilizada no método de solução ótima para o ATSP pois, devido à sua complexidade ser O(n!), será impraticável resolvê-lo com a performance dos computadores atuais. Este caso teste visa comparar o tempo gasto entre as heurísticas Vizinho mais Próximo e 2-opt. }
+  {\paragraph{} O quarto caso de teste, armazenado no arquivo test\_4, possui 14 pontos para testar a operacionalidade, resultados e tempo de resolução do TSP simétrico, extraídos do website \url{http://www.iwr.uni-heidelberg.de/groups/comopt/software/TSPLIB95/tsp/burma14.tsp.gz} }
+  {\paragraph{} O quinto caso teste, armazenado no arquivo test\_5, é constituído de 13509 pontos para verificar a performance da Heurística Envoltório Convexo para o TSP simétrico. Este conjunto de pontos pode ser achado para download no endereço \url{http://www.iwr.uni-heidelberg.de/groups/comopt/software/TSPLIB95/tsp/usa13509.tsp.gz} }
+  {\paragraph{} Para medição e comparação dos tempos, será utilizada a função \emph{time} do {\it bash} em um computador com a seguinte configuração: Notebook Dell Vostro 3460, com Sistema Operacional Ubuntu 15.04 64-bit, Memória de 5.7 GiB, processador Intel® Core™ i5-3230M CPU @ 2.60GHz x 4 e placa de vídeo GeForce GT 630M/PCIe/SSE2. No terminal será rodado o seguinte comando: \emph{time ./trab1 n algoritmo < test\_k}, onde \emph{n} é a ordem da matriz ou a quantidade de pontos, enquanto \emph{algoritmo} é o algoritmo a ser utilizado sobre o caso de teste e \emph{test\_k} é o k-ésimo caso-teste.}
+  
+ \newpage
+ \section{Função Main e Considerações}	
+  {\paragraph{} O uso do programa no terminal, após rodar \emph{make all} no diretório contendo os códigos do trabalho, é da forma \emph{./trab1 n algoritmo}, onde \emph{n} é a ordem da matriz ou a quantidade de pontos, enquanto \emph{algoritmo} é o algoritmo a ser utilizado sobre o caso de teste. }
+  {\paragraph{} Na função Main, de assinatura {\tt int main(int argc, char *argv[]);}, receberá em argv[1] e argv[2] o tamanho da entrada e o algoritmo a ser utilizado, respectivamente. Uma cadeia de {\it if}s e {\it else}s determinarão quais funções serão utilizadas para o algoritmo desejado.}
+  {\paragraph{} As saídas mostram o tour entre as cidade de 0 (cidade inicial) até n-1 e, logo em seguida, mostram o custo total do tour. Um asterisco (*) é sempre enviado para {\it stdout} caso a execução tenha sido bem sucedida. }
+  
+ \newpage
+ \section{Solução Ótima para o ATSP}
+  {\paragraph{} Para que a solução ótima do problema ATSP seja encontrada é necessário a avaliação de todas as possíveis rotas, por isso, utilizamos uma TAD para a geração de todas as permutações possíveis entre \emph{n} números.}
+  {\paragraph{} Essa TAD se chama \emph{PermGen} e possui as seguintes funções:\\
+  {\tt PermGen* criarPermGen(int n);}\\
+  {\tt int step(PermGen* pg);}\\
+  {\tt void reset(PermGen* pg);}\\
+  {\tt void printPerm(PermGen* pg);}\\
+  {\tt int *getPerm(PermGen* pg);}\\
+  {\tt void liberarPerm(PermGen* pg);}}
+  {\paragraph{} A função {\tt criarPermGen} cria uma nova estrutura para a geração de permutações, a função {\tt step} avança para a próxima permutação possível,
+  a função {\tt reset}, volta para a permutação inicial, que consiste em todos os números ordenados, a função {\tt printPerm}
+  foi utilizada para testar o funcionamento da TAD e imprime a permutação atual, a função {\tt getPerm} retorna a permutação atual
+  em um vetor de inteiros e, finalmente, a função {\tt liberarPerm} libera a memória alocada para a estrutura.}
+  {\paragraph{} A função que de fato encontra a solução ótima do ATSP, tem a seguinte assinatura: {\tt void exato(int tam, float **matriz);}}
+  {\paragraph{} O parâmetro {\tt int tam} é a ordem da matriz de distâncias presente em {\tt float **matriz}. Essa função faz uso de uma estrutura
+  do tipo \emph{PermGen} e de suas operações para obter a solução ótima. Fizemos com que a cidade inicial e final dos caminhos
+  avaliados pela função fosse sempre a cidade de índice 0.}
+  {\paragraph{} O algoritmo implementado nessa função possui complexidade O(n!) e, experimentalmente, observamos que sua utilização
+  para problemas ATSP com mais de 13 cidades se torna impraticável. Porém, optamos por limitar a capacidade do algoritmo em 12 cidades, 
+  dado que a solução para 13 cidades pode levar alguns minutos para ser obtida.}
+  {\paragraph{} Para o caso teste test\_1 o resultado foi o seguinte:\\ 0 \\ 2 \\ 1 \\ 1036 \\ {*}}
+  {\paragraph{} Sendo 0->2->1->0 o tour com custo total de 1036. O tempo de execução foi de 0,002 segundo.}
+  {\paragraph{} Para o caso teste test\_2 o resultado foi o seguinte:\\ 0 \\ 2 \\ 1 \\ 9 \\ 10 \\ 5 \\ 6 \\ 3 \\ 4 \\ 7 \\ 8 \\ 11 \\ 39 \\ {*}}
+  {\paragraph{} O tempo de execução foi de 14,473 segundos.}
+ 
+ \newpage
+ \section{Heurísitica Vizinho mais Próximo para o ATSP}
+  {\paragraph{} Esta heurística faz uso da idéia de que, dado uma cidade inicial, a próxima cidade do tour será aquela que tem a menor distância da cidade atual em que o caixeiro se encontra.}
+  {\paragraph{} A função principal utilizada para trabalhar com a Heurística Vizinho mais Próximo para o ATSP é a nn, cuja assinatura é: \newline {\tt float nn(int tam, float **matriz, int melhorCaminho[], int print);}}
+  {\paragraph{} As entradas da função responsável por esta heurística são: {\tt int tam}, que corresponde à ordem da matriz, {\tt float **matriz}, o qual é a matriz dada pela entrada, {\tt int melhorCaminho[]}, o qual corresponde ao vetor de tamanho {\tt tam} que será armazenado o melhor caminho, onde melhorCaminho[0] corresponde à cidade inicial, melhorCaminho[1] é a próxima cidade a ser visitada e assim por diante, e {\tt int print}, que, uma vez que esta função também é utilizada pela Heurística de Melhoramento 2-opt para o ATSP, determina se o resultado da função deve ser enviado para {\it stdout}, se o valor da variável for 1, ou não.}
+  {\paragraph{} O algoritmo é o mais simples quando comparado com as demais implementações deste trabalho, apesar de possuir complexidade O(n$^2$), assim como outros. O primeiro passo é armazenar o valor 0 (zero) no vetor {\tt melhorCaminho}, indicando a cidade inicial. As cidades que forem sendo visitadas terão suas respectivas colunas na matriz substituídas pela constante INF, o qual é definido como um número arbitrariamente grande para identificar a cidade que já foi visitada. Em seguida, com iteração quadrática, é realizado o processo de encontrar as próximas tam-2 cidades: para a linha da cidade anteriormente visitada, verifica-se em todas as suas colunas qual possui o menor valor, cujo índice da coluna será armazenado. Logo após, com a única coluna restante com valor diferente de {\tt INF}, determina-se a última cidade a ser visitada antes de retornar à inicial.}
+  {\paragraph{} Como dito anteriormente, se a variável {\tt print} possuir valor 1, o resultado será imprimido. O valor deve ser igual a 1 sempre que for necessário mostrar ao usuário o resultado dessa função. Em caso positivo, será mostrada a sequência de cidades a serem percorridas e a distância total dessa sequência. A função retornará o valor, através da variável {\tt float melhorDist}, do custo do menor caminho percorrido. Esse caminho é necessário para o uso futuro da heurística 2-opt e é passado por um vetor. }
+  {\paragraph{} Para o caso teste test\_1 o resultado foi o seguinte:\\ 0 \\ 1 \\ 2 \\ 2157 \\ {*}}
+  {\paragraph{} Sendo 0->1->2->0 o tour com custo total de 2157. O tempo de execução foi de 0,002 segundo.}
+  {\paragraph{} Para o caso teste test\_2 o resultado foi o seguinte:\\ 0 \\ 11 \\ 1 \\ 9 \\ 10 \\ 2 \\ 7 \\ 8 \\ 5 \\ 6 \\ 3 \\ 4 \\ 92 \\ {*}}
+  {\paragraph{} O tempo de execução foi de 0,002 segundo.}
+  {\paragraph{} Para o caso test\_3 obteve-se custo 3922 e tempo de execução de 0,078 segundo.}
+ 
+ \newpage
+ \section{Heurística de Melhoramento 2-opt para o ATSP}
+  {\paragraph{} Nesta heurísitca é visado, através de um resultado anteriormente obtido, encontrar um tour menor ao realizar trocas 2 a 2 de trechos entre duas cidades quaisquer. Neste caso, estar-se-á usando a heurísitca do vizinho mais próximo como resultado inicial para que sejam feitas as permutações de trechos do tour. }
+  {\paragraph{} A função principal utilizada para trabalhar com a Heurística de Melhoramento 2-opt para o ATSP é a opt, cuja assinatura é: \newline {\tt void opt(int tam, float **matriz);}}
+  {\paragraph{} As entradas da função responsável por esta heurística são: {\tt int tam}, que corresponde à ordem da matriz, e {\tt float **matriz}, o qual é a matriz dada pela entrada.}
+  {\paragraph{} O primeiro passo do algoritmo é receber o menor caminho e a respectiva menor distância provida do algoritmo da Heurísitica Vizinho mais Próximo para o ATSP (vide seção anterior para maiores informações). Logo em seguida, são realizadas operações de permutação do trecho entre a cidade inicial e a seguinte e os demais trechos não adjacentes a este. Este caso foi feito em separado dos demais para que as trocas se deêm até o trecho tam-2, pois o tam-1 é adjacente ao trecho inicial. Depois são realizadas as demais trocas entre trechos, isto é, desde o trecho entre as cidades 1 e 2 até de tam-3 e tam-2 e, para condição de suficiência e eficiência das permutações, ao iniciar as permutações entre as cidades i e i+1, são realizadas permutações com os trechos entre as cidades i+2 e i+3 até as de tam-2 e tam-1. Caso uma melhora seja identificada em uma determinada permutação, o tour melhorado e sua distância serão armazenados. Ao final da execução, será enviado para {\it stdout} o tour e o respectivo comprimento do trajeto com a menor distância encontrada. É possível que não haja alteração entre o resultado do vizinho mais próximo e do 2-opt. }
+  {\paragraph{} O processo nesta heurísitca faz uso de duas funções auxiliares: {\tt opt\_cria\_caminho}, o qual realiza a permutação de trechos, e {\tt calcula\_distancia}, que calcula a distância total de determinado tour. }
+  {\paragraph{} Para o caso teste test\_1 o resultado foi o seguinte:\\ 0 \\ 1 \\ 2 \\ 2157 \\ {*}}
+  {\paragraph{} Sendo 0->1->2->0 o tour com custo total de 2157. O tempo de execução foi de 0,002 segundo.}
+  {\paragraph{} Para o caso teste test\_2 o resultado foi o seguinte:\\ 0 \\ 11 \\ 1 \\ 9 \\ 10 \\ 2 \\ 7 \\ 8 \\ 4 \\ 3 \\ 6 \\ 5 \\ 56 \\ {*}}
+  {\paragraph{} O tempo de execução foi de 0,002 segundo.}
+  {\paragraph{} Para o caso test\_3 obteve-se custo 3899 e tempo de execução de 0,406 segundo.}
+  
+ \newpage
+ \section{Heurística Envoltório Convexo para o TSP simétrico}
+ {\paragraph{} A Heurística Envoltório Convexo consiste num algoritmo que, primeiramente, constrói um tour com algumas das cidades 
+ do problema, de tal forma que o tour seja um envoltório convexo envolvendo todas as demais. Posteriormente, as cidades restantes 
+ vão sendo adicionadas ao tour, uma a uma, de forma que sua adição acarrete o menor custo possível.}
+ {\paragraph{} O armazenamento dos pontos lidos na entrada do algoritmo foi realizado através da TAD \emph{vetorDePontos}. 
+ Para a formação do envoltório convexo inicial do algoritmo, utilizamos uma TAD \emph{Pilha} e suas operações. Uma TAD 
+ \emph{Tour} foi utilizada para armazenar o tour dado por esse envoltório. As operações presentes em \emph{Tour} foram utilizadas
+ para que as demais cidades fossem incluídas no tour, com o menor custo possível.}
+ {\paragraph{} Os cabeçalhos das funções que de fato executam o algoritmo hull estão presentes em \emph{convexHull.h} e são as
+ seguintes:\\
+ {\tt void pilhaInicTour(Tour* tour, Pilha *pilha);}\\
+ {\tt void pilhaFimTour(Tour *tour, Pilha *pilha);}\\
+ {\tt Tour* fazerEnvoltorio(Ponto **pontos, int n);}\\
+ {\tt void finalizarTour(Tour *tour, Ponto **pontos, int n);}\\
+ {\tt int findPos(Ponto *p, Tour *tour);}\\
+ {\tt int curva(Ponto *p1, Ponto *p2, Ponto *p3);}\\
+ {\tt float dist(Ponto *p1, Ponto *p2);}\\
+ {\tt float custo(Tour *tour);}}
+ {\paragraph{} As funções {\tt pilhaInicTour} e {\tt pilhaFimTour} são funções auxiliares responsáveis por passar as partes superior
+ e inferior do envoltório à estrutura \emph{Tour}. A função {\tt fazerEnvoltorio} constrói o tour dado pelo envoltório convexo 
+ e também utiliza, como função auxiliar, a função {\tt curva}. A função {\tt finalizarTour} adiciona as cidades não presentes
+ no envoltório ao tour e faz uso das funções auxiliares {\tt findPos} e {\tt dist}. A função {\tt custo} retorna o valor total
+ da distância percorrida no tour.}
+ {\paragraph{} Para o caso teste test\_4 o resultado foi o seguinte:\\9\\8\\10\\0\\7\\12\\6\\4\\3\\2\\5\\11\\13\\1\\34.53\\{*}}
+ {\paragraph{} Onde o custo total é de 34,53 e tempo de execução foi de 0,002 segundo.}
+ {\paragraph{} Para o caso test\_5 obteve-se custo 30029754,00 e tempo de execução de 2,329 segundos.}
+ 
+ \newpage
+ \section{Conclusão}
+  {\paragraph{} Quanto ao ATSP, pode-se perceber que em casos de teste com dimensão suficientemente grande faz-se necessário o uso de heurísticas para a solução do problema, à medida que a busca pela solução ótima, com o algoritmo exato, se torna impraticável. A solução ótima, apesar de oferecer a melhor resposta, possui complexidade O(n!), o que pode levar muitos anos para um caso que seria resolvido em segundos com Vizinho mais próximo (NN) ou 2-opt. Tanto o NN quanto o 2-opt são O(n$^2$), o que garante resultados muito mais rápidos e com relativa precisão. O 2-opt, apesar de ligeiramente mais lento que o NN, conseguiu encontrar soluções melhores que as calculadas pelo NN, mas outras vezes encontrou o mesmo resultado que este. }
+  {\paragraph{} O Envoltório Convexo é voltado para o TSP simétrico e com entradas diferentes das outras implementações, sendo difícil comparar este com aqueles. Porém, por possuir complexidade polinomial O(n$^2$), conseguiu calcular um tour com grande quantidade de pontos em poucos segundos, apesar de não oferecer a melhor resposta como o método de solução ótima para o ATSP.}
+  {\paragraph{} De maneira geral, a melhor implementação a ser utilizada é totalmente dependente do caso em si. Para o ATSP, se foco for a precisão, usa-se o Exato, mas se a entrada for grande o suficiente para não esperar o resultado é necessário recorrer ao NN ou 2-opt, apesar de não garantir a exatidão. O Envoltório Convexo também não garante a exatidão, mas oferece bom desempenho em casos de muitos pontos.}
+ 
+\end{document}
